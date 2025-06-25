@@ -1,0 +1,47 @@
+# Archivos de Python
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+
+# Entornos virtuales (si usaras uno localmente, aunque Docker maneja el suyo)
+venv/
+.venv/
+env/
+
+# Archivos de Docker Compose / Docker generados
+# Aunque estamos en Docker, a veces hay cachés o volúmenes
+# que no queremos trackear si no están mapeados para eso específicamente.
+# Los logs y reportes generados por el script de Python ya están en 'tests/'
+# y serán ignorados por las reglas de abajo.
+.dockerignore
+!Dockerfile # No ignorar el propio Dockerfile
+
+# Archivos de los tests de Selenium generados
+# Los logs de tu script de Python
+tests/*.log
+# Los informes HTML finales
+tests/final_report_*.html
+# Las capturas de pantalla de los pasos
+tests/step_screenshot_*.png
+# Las capturas de pantalla de error
+tests/error_screenshot_*.png
+
+# Archivos de configuración de IDEs y editores comunes
+.idea/             # JetBrains IDEs (IntelliJ, PyCharm, WebStorm, etc.)
+.vscode/           # VS Code (excepto si contuviera configs compartidas)
+*.sublime-project
+*.sublime-workspace
+.DS_Store          # macOS
+Thumbs.db          # Windows
+
+# Archivos de paquetes de Node.js (si alguna vez añades frontend directamente)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de entorno (si los tuvieras para otras configs)
+.env
+.env.local
+.env.*.local

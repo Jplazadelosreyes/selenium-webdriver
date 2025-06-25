@@ -1,0 +1,74 @@
+# .github/workflows/test.yml
+
+# Nombre del flujo de trabajo que aparecerá en la interfaz de GitHub Actions
+name: Selenium Python Tests with Docker
+
+# Define cuándo se ejecutará este flujo de trabajo
+on:
+  # Se ejecutará cuando haya un push a la rama 'main' (o la rama principal que uses)
+  # También se puede configurar para 'pull_request' o 'workflow_dispatch' (para ejecutarlo manualmente)
+  push:
+    branches:
+      - main
+      - master # O la rama principal de tu repositorio
+
+  # Permite ejecutar el flujo de trabajo manualmente desde la interfaz de GitHub
+  workflow_dispatch:
+
+jobs:
+  # Define un trabajo (job) llamado 'run-tests'
+  run-tests:
+    # Sistema operativo en el que se ejecutará el trabajo (Ubuntu es común y tiene Docker preinstalado)
+    runs-on: ubuntu-latest
+
+    # Pasos que se ejecutarán en este trabajo
+    steps:
+      # Paso 1: Obtener el código del repositorio
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Paso 2: Configurar Docker Buildx (opcional, pero buena práctica para builds modernos de Docker)
+      # No es estrictamente necesario si solo estás construyendo imágenes localmente en el runner,
+      # pero es útil si en el futuro quieres empujar imágenes a un registro o usar características avanzadas.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Paso 3: Configurar QEMU (opcional, para emulación de plataformas si tu imagen Python no es amd64)
+      # Si tu imagen base 'python:3.9-slim-buster' es compatible con 'ubuntu-latest', esto puede ser omitido.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Paso 4: Ejecutar Docker Compose para construir y levantar los servicios
+      # El '--build' asegura que las imágenes se construyan desde cero (o se reconstruyan si hay cambios
+      # en el Dockerfile o en los archivos de contexto como requirements.txt).
+      # El '-d' (detached) es opcional, pero ayuda a que el comando termine y puedas seguir con los logs o artefactos.
+      # Lo quitamos para que los logs se muestren directamente en la consola de GitHub Actions.
+      - name: Build and Run Docker Compose Services
+        # Usa un 'container' para ejecutar Docker Compose si necesitas un entorno específico,
+        # pero 'ubuntu-latest' ya tiene Docker y Docker Compose, así que se ejecuta directamente.
+        run: |
+          echo "Starting Docker Compose services..."
+          docker-compose up --build --abort-on-container-exit
+          echo "Docker Compose services started and test completed."
+
+      # Paso 5: Recopilar los logs del contenedor de pruebas
+      # Esto es útil para ver la salida de tu script de Python en el log de GitHub Actions.
+      - name: Show Python Test Logs
+        run: docker-compose logs python-tests
+
+      # Paso 6: Subir los artefactos generados (informe HTML y capturas de pantalla)
+      # Esto permite descargar los archivos después de que el flujo de trabajo haya terminado.
+      - name: Upload Test Reports and Screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          # Ruta a los archivos que se subirán. El asterisco (*) es un comodín.
+          # Asegúrate de que los nombres de los archivos generados por tu script coincidan con este patrón.
+          path: |
+            tests/test_busqueda_log_*.log
+            tests/final_report_*.html
+            tests/step_screenshot_*.png
+            tests/error_screenshot_*.png
+          # Nombre del artefacto que aparecerá en la interfaz de GitHub
+          name: selenium-test-results-${{ github.run_id }}
+          # Caducidad del artefacto (opcional, por defecto son 90 días)
+          retention-days: 7

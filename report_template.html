@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe de Prueba Selenium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #f0f4f8;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 960px;
+            margin: 2rem auto;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+        }
+        h1, h2 {
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            text-align: center;
+        }
+        h2 {
+            font-size: 1.75rem;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 0.75rem;
+            margin-top: 2rem;
+        }
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-left: 1rem;
+        }
+        .status-success {
+            background-color: #d1fae5; /* green-100 */
+            color: #065f46; /* green-800 */
+        }
+        .status-failure {
+            background-color: #fee2e2; /* red-100 */
+            color: #991b1b; /* red-800 */
+        }
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background-color: #f7fafc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .step-icon {
+            flex-shrink: 0;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+            margin-right: 1rem;
+            background-color: #3b82f6; /* blue-500 */
+        }
+        .step-content {
+            flex-grow: 1;
+        }
+        .step-description {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #4a5568;
+        }
+        .step-details {
+            font-size: 0.875rem;
+            color: #718096;
+        }
+        .step-details strong {
+            color: #2d3748;
+        }
+        .screenshot-thumbnail {
+            width: 100%;
+            max-width: 250px; /* Tamaño máximo para la miniatura */
+            height: auto;
+            border-radius: 0.5rem;
+            margin-top: 0.75rem;
+            border: 1px solid #cbd5e0;
+            cursor: pointer; /* Indica que es clickeable */
+            transition: transform 0.2s ease-in-out;
+        }
+        .screenshot-thumbnail:hover {
+            transform: scale(1.02);
+        }
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .close-modal:hover,
+        .close-modal:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 id="reportTitle">Informe de Prueba</h1>
+    <div class="summary-section mt-6 p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800">
+        <p><strong>Nombre de la Prueba:</strong> <span id="testName"></span></p>
+        <p><strong>Estado:</strong> <span id="testStatus" class="status-badge"></span></p>
+        <p><strong>Hora de Inicio:</strong> <span id="startTime"></span></p>
+        <p><strong>Hora de Fin:</strong> <span id="endTime"></span></p>
+        <p><strong>Duración:</strong> <span id="duration"></span></p>
+    </div>
+
+    <h2>Pasos de la Prueba</h2>
+    <div id="testSteps" class="mt-4">
+        <!-- Los pasos de la prueba se inyectarán aquí por JavaScript -->
+        <p class="text-gray-500 text-center">Cargando pasos...</p>
+    </div>
+</div>
+
+<!-- Modal para mostrar la captura de pantalla completa -->
+<div id="screenshotModal" class="modal">
+    <span class="close-modal" onclick="document.getElementById('screenshotModal').style.display='none'">&times;</span>
+    <img class="modal-content" id="fullScreenshot">
+</div>
+
+<script>
+    // ¡IMPORTANTE! Los datos de la prueba se inyectarán directamente aquí por el script de Python.
+    // No hay necesidad de fetch() ni de pedir el nombre del archivo.
+    const testReportData = window.testReportData; // Asume que Python inyectará esta variable global
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const testStepsContainer = document.getElementById('testSteps');
+        const reportTitle = document.getElementById('reportTitle');
+        const testNameSpan = document.getElementById('testName');
+        const testStatusSpan = document.getElementById('testStatus');
+        const startTimeSpan = document.getElementById('startTime');
+        const endTimeSpan = document.getElementById('endTime');
+        const durationSpan = document.getElementById('duration');
+        const modal = document.getElementById('screenshotModal');
+        const fullScreenshot = document.getElementById('fullScreenshot');
+
+        // Función para formatear la fecha y hora
+        const formatTimestamp = (timestamp) => {
+            if (!timestamp) return 'N/A';
+            const date = new Date(timestamp * 1000); // Multiplicar por 1000 para ms
+            return date.toLocaleString('es-ES', {
+                year: 'numeric', month: 'long', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false
+            });
+        };
+
+        // Función para renderizar el informe HTML
+        function renderReport(data) {
+            if (!data || !data.test_name || !data.steps) {
+                reportTitle.textContent = "Error: Datos de informe incompletos";
+                testStepsContainer.innerHTML = `<p class="text-red-500 text-center">No se pudieron cargar los datos del informe. Verifica el script de Python.</p>`;
+                return;
+            }
+
+            reportTitle.textContent = `Informe de Prueba: ${data.test_name}`;
+            testNameSpan.textContent = data.test_name;
+            testStatusSpan.textContent = data.status;
+            testStatusSpan.classList.add(data.status === "ÉXITO" ? "status-success" : "status-failure");
+            startTimeSpan.textContent = formatTimestamp(data.start_time);
+            endTimeSpan.textContent = formatTimestamp(data.end_time);
+
+            const duration = (data.end_time - data.start_time).toFixed(2);
+            durationSpan.textContent = `${duration} segundos`;
+
+            testStepsContainer.innerHTML = ''; // Limpiar contenido previo
+
+            data.steps.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'step-item';
+
+                const iconClass = step.type === "ÉXITO" ? "bg-green-500" :
+                    step.type === "ERROR" ? "bg-red-500" :
+                        "bg-blue-500"; // Default for INFO
+
+                const stepIconDiv = document.createElement('div');
+                stepIconDiv.className = `step-icon ${iconClass}`;
+                stepIconDiv.textContent = index + 1; // Número de paso
+                stepDiv.appendChild(stepIconDiv);
+
+                const stepContentDiv = document.createElement('div');
+                stepContentDiv.className = 'step-content';
+
+                const descriptionP = document.createElement('p');
+                descriptionP.className = 'step-description';
+                descriptionP.textContent = step.description;
+                stepContentDiv.appendChild(descriptionP);
+
+                const detailsDiv = document.createElement('div');
+                detailsDiv.className = 'step-details';
+                detailsDiv.innerHTML = `
+                        <strong>Timestamp:</strong> ${formatTimestamp(step.timestamp)}<br>
+                        <strong>URL:</strong> <a href="${step.url}" target="_blank" class="text-blue-600 hover:underline">${step.url}</a><br>
+                        <strong>Tipo:</strong> ${step.type}
+                    `;
+                stepContentDiv.appendChild(detailsDiv);
+
+                if (step.screenshot && step.screenshot !== "N/A") {
+                    const screenshotImg = document.createElement('img');
+                    // La ruta de la captura de pantalla es relativa al informe HTML final.
+                    // Como el informe final se guarda en 'tests/', y las capturas también, la ruta es directa.
+                    screenshotImg.src = `./${step.screenshot}`;
+                    screenshotImg.alt = `Captura de pantalla del paso ${index + 1}`;
+                    screenshotImg.className = 'screenshot-thumbnail';
+                    screenshotImg.onclick = () => {
+                        fullScreenshot.src = `./${step.screenshot}`;
+                        modal.style.display = 'flex'; // Usar flex para centrado
+                    };
+                    stepContentDiv.appendChild(screenshotImg);
+                } else if (step.type === "ERROR") {
+                    const noScreenshotP = document.createElement('p');
+                    noScreenshotP.className = 'text-red-500 text-sm mt-2';
+                    noScreenshotP.textContent = 'No se pudo guardar la captura de pantalla para este error.';
+                    stepContentDiv.appendChild(noScreenshotP);
+                }
+
+                stepDiv.appendChild(stepContentDiv);
+                testStepsContainer.appendChild(stepDiv);
+            });
+        }
+
+        // Renderiza el informe usando los datos inyectados por Python
+        if (testReportData) {
+            renderReport(testReportData);
+        } else {
+            reportTitle.textContent = "Error: Datos de informe no disponibles";
+            testStepsContainer.innerHTML = `<p class="text-red-500 text-center">El script de Python no inyectó los datos del informe. Asegúrate de que el test se haya ejecutado correctamente.</p>`;
+        }
+    });
+</script>
+</body>
+</html>

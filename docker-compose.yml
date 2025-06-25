@@ -1,0 +1,48 @@
+version: '3.8' # Especifica la versión de Docker Compose.
+
+services:
+  # Servicio para el Hub de Selenium Grid
+  selenium-hub:
+    image: selenium/hub:4.19.1 # Imagen oficial del hub de Selenium Grid (versión específica para estabilidad)
+    container_name: selenium-hub
+    ports:
+      - "4444:4444" # Mapea el puerto del hub al host
+      - "4443:4443" # Puerto para eventos internos (publish)
+      - "4442:4442" # Puerto para eventos internos (subscribe)
+    restart: always # Asegura que el servicio se reinicie automáticamente
+
+  # Servicio para el Nodo de Chrome (el navegador que ejecutará las pruebas)
+  chrome-node:
+    image: selenium/node-chrome:4.19.1 # Imagen oficial del nodo de Chrome para Selenium (versión específica)
+    container_name: chrome-node
+    depends_on:
+      - selenium-hub # Asegura que el hub esté corriendo antes de iniciar el nodo
+    environment:
+      # Configura el nodo para que se registre en el hub de Selenium
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_VNC_ENABLED=false # Deshabilita el VNC explícitamente para una ejecución headless más estable
+      - SE_START_XVFB=false # Deshabilita el servidor X virtual (XVFB) si VNC está deshabilitado
+    shm_size: '2gb' # Aumenta la memoria compartida para Chrome para evitar problemas de crash en el navegador
+    # El mapeo de puerto VNC (5900:5900) ha sido eliminado para la ejecución headless y más estable.
+    # Si en algún momento necesitas ver la GUI del navegador para depuración, puedes volver a añadirlo.
+
+  # Servicio para tu aplicación Python que ejecuta las pruebas
+  python-tests:
+    build:
+      context: . # El contexto de construcción es el directorio actual (donde está el Dockerfile)
+      dockerfile: Dockerfile # Nombre de tu Dockerfile
+    container_name: python-selenium-tests
+    volumes:
+      # Mapea tu carpeta local 'tests' (donde guardas tus scripts de prueba)
+      # a '/app/tests' dentro del contenedor.
+      - ./tests:/app/tests
+    depends_on:
+      - selenium-hub # Asegura que el hub esté listo antes de que Python intente conectarse
+      - chrome-node  # Asegura que al menos un nodo de navegador esté disponible
+    environment:
+      # URL del Selenium Grid Hub al que se conectará tu script de Python
+      - SELENIUM_HUB_URL=http://selenium-hub:4444/wd/hub
+    # ¡CORRECCIÓN AQUÍ! Cambia 'example_test.py' a 'test_busqueda.py'
+    command: python tests/test_busqueda.py
