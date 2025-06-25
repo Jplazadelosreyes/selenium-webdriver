@@ -28,47 +28,38 @@ jobs:
         uses: actions/checkout@v4
 
       # Paso 2: Configurar Docker Buildx (opcional, pero buena práctica para builds modernos de Docker)
-      # No es estrictamente necesario si solo estás construyendo imágenes localmente en el runner,
-      # pero es útil si en el futuro quieres empujar imágenes a un registro o usar características avanzadas.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       # Paso 3: Configurar QEMU (opcional, para emulación de plataformas si tu imagen Python no es amd64)
-      # Si tu imagen base 'python:3.9-slim-buster' es compatible con 'ubuntu-latest', esto puede ser omitido.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # Paso 4: Ejecutar Docker Compose para construir y levantar los servicios
-      # El '--build' asegura que las imágenes se construyan desde cero (o se reconstruyan si hay cambios
-      # en el Dockerfile o en los archivos de contexto como requirements.txt).
-      # El '-d' (detached) es opcional, pero ayuda a que el comando termine y puedas seguir con los logs o artefactos.
-      # Lo quitamos para que los logs se muestren directamente en la consola de GitHub Actions.
+      # PASO CLAVE AGREGADO: Asegurar que Docker y Docker Compose estén correctamente configurados
+      - name: Set up Docker and Docker Compose
+        uses: docker/setup-docker-action@v3
+
+      # Paso 5 (antes Paso 4): Ejecutar Docker Compose para construir y levantar los servicios
       - name: Build and Run Docker Compose Services
-        # Usa un 'container' para ejecutar Docker Compose si necesitas un entorno específico,
-        # pero 'ubuntu-latest' ya tiene Docker y Docker Compose, así que se ejecuta directamente.
         run: |
           echo "Starting Docker Compose services..."
-          docker-compose up --build --abort-on-container-exit
+          # Usamos 'docker compose' sin guion, que es la sintaxis moderna y más fiable
+          # con el plugin de Docker Compose.
+          docker compose up --build --abort-on-container-exit
           echo "Docker Compose services started and test completed."
 
-      # Paso 5: Recopilar los logs del contenedor de pruebas
-      # Esto es útil para ver la salida de tu script de Python en el log de GitHub Actions.
+      # Paso 6 (antes Paso 5): Recopilar los logs del contenedor de pruebas
       - name: Show Python Test Logs
-        run: docker-compose logs python-tests
+        run: docker compose logs python-tests # También cambiamos a 'docker compose'
 
-      # Paso 6: Subir los artefactos generados (informe HTML y capturas de pantalla)
-      # Esto permite descargar los archivos después de que el flujo de trabajo haya terminado.
+      # Paso 7 (antes Paso 6): Subir los artefactos generados (informe HTML y capturas de pantalla)
       - name: Upload Test Reports and Screenshots
         uses: actions/upload-artifact@v4
         with:
-          # Ruta a los archivos que se subirán. El asterisco (*) es un comodín.
-          # Asegúrate de que los nombres de los archivos generados por tu script coincidan con este patrón.
           path: |
             tests/test_busqueda_log_*.log
             tests/final_report_*.html
             tests/step_screenshot_*.png
             tests/error_screenshot_*.png
-          # Nombre del artefacto que aparecerá en la interfaz de GitHub
           name: selenium-test-results-${{ github.run_id }}
-          # Caducidad del artefacto (opcional, por defecto son 90 días)
           retention-days: 7
