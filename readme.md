@@ -1,3 +1,4 @@
+[![Selenium Python Tests with Docker](https://github.com/Jplazadelosreyes/selenium-webdriver/actions/workflows/test.yml/badge.svg)](https://github.com/Jplazadelosreyes/selenium-webdriver/actions/workflows/test.yml)
 # Proyecto de Pruebas de Selenium con Python y Docker Compose
 
 Este proyecto proporciona un entorno aislado y reproducible para ejecutar pruebas automatizadas de Selenium utilizando Python, Docker y Selenium Grid. El objetivo es simular interacciones de usuario en un navegador web (Chrome) y generar informes detallados con capturas de pantalla de cada paso.
